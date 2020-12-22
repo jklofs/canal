@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.otter.canal.common.CanalException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,17 +153,21 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
     public void stop(String destination) {
         CanalInstance canalInstance = canalInstances.remove(destination);
         if (canalInstance != null) {
-            if (canalInstance.isStart()) {
-                try {
-                    MDC.put("destination", destination);
+            try {
+                MDC.put("destination", destination);
+                if (canalInstance.isStart()){
                     canalInstance.stop();
-                    if (metrics.isRunning()) {
-                        metrics.unregister(canalInstance);
-                    }
-                    logger.info("stop CanalInstances[{}] successfully", destination);
-                } finally {
-                    MDC.remove("destination");
                 }
+                if (metrics.isRunning()) {
+                    metrics.unregister(canalInstance);
+                }
+                logger.info("stop CanalInstances[{}] successfully", destination);
+            }catch (Exception e){
+                logger.error("stop CanalInstances[{}] error :{}", destination,e.getMessage());
+                canalInstances.put(destination,canalInstance);
+                throw new CanalException(e);
+            }finally {
+                MDC.remove("destination");
             }
         }
     }

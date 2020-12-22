@@ -4,6 +4,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.otter.canal.common.CanalException;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.exception.ZkException;
 import org.I0Itec.zkclient.exception.ZkInterruptedException;
@@ -91,7 +92,9 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
     }
 
     public synchronized void start() {
-        super.start();
+        if (!super.isStart()) {
+            super.start();
+        }
         try {
             processStart();
             if (zkClient != null) {
@@ -107,6 +110,8 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
             logger.error("start failed", e);
             // 没有正常启动，重置一下状态，避免干扰下一次start
             stop();
+            //由于失败了，所以需要告知外部异常
+            throw new CanalException(e);
         }
 
     }
@@ -122,17 +127,25 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
     }
 
     public synchronized void stop() {
-        super.stop();
+        try {
+            if (!super.isStart()){
+                return;
+            }
+            if (zkClient != null) {
+                String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
+                zkClient.unsubscribeDataChanges(path, dataListener);
 
-        if (zkClient != null) {
-            String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
-            zkClient.unsubscribeDataChanges(path, dataListener);
-
-            releaseRunning(); // 尝试一下release
-        } else {
-            processActiveExit(); // 没有zk，直接启动
+                releaseRunning(); // 尝试一下release
+            } else {
+                processActiveExit(); // 没有zk，直接启动
+            }
+            processStop();
+            super.stop();
+        }catch (Exception e){
+            logger.error("serverRunningMonitor stop error,{}",e.getMessage());
+            throw new CanalException(e);
         }
-        processStop();
+
     }
 
     private void initRunning() {

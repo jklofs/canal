@@ -3,6 +3,7 @@ package com.alibaba.otter.canal.deployer;
 import java.util.Map;
 import java.util.Properties;
 
+import com.alibaba.otter.canal.common.CanalException;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
@@ -255,15 +256,21 @@ public class CanalController {
                 public void stop(String destination) {
                     // 此处的stop，代表强制退出，非HA机制，所以需要退出HA的monitor和配置信息
                     InstanceConfig config = instanceConfigs.remove(destination);
-                    if (config != null) {
-                        embededCanalServer.stop(destination);
-                        ServerRunningMonitor runningMonitor = ServerRunningMonitors.getRunningMonitor(destination);
-                        if (runningMonitor.isStart()) {
-                            runningMonitor.stop();
+                    try {
+                        if (config != null) {
+                            embededCanalServer.stop(destination);
+                            ServerRunningMonitor runningMonitor = ServerRunningMonitors.getRunningMonitor(destination);
+                            if (runningMonitor.isStart()) {
+                                runningMonitor.stop();
+                            }
                         }
-                    }
 
-                    logger.info("auto notify stop {} successful.", destination);
+                        logger.info("auto notify stop {} successful.", destination);
+                    }catch (Exception e){
+                        instanceConfigs.put(destination,config);
+                        logger.error("auto notify stop {} error.,execption:{}", destination,e.getMessage());
+                        throw new CanalException(e);
+                    }
                 }
 
                 public void reload(String destination) {

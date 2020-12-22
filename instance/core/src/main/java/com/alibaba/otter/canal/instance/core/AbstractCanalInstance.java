@@ -73,8 +73,10 @@ public class AbstractCanalInstance extends AbstractCanalLifeCycle implements Can
     }
 
     @Override
-    public void start() {
-        super.start();
+    public synchronized void start() {
+        if (!super.isStart()) {
+            super.start();
+        }
         if (!metaManager.isStart()) {
             metaManager.start();
         }
@@ -101,9 +103,7 @@ public class AbstractCanalInstance extends AbstractCanalLifeCycle implements Can
 
     @Override
     public void stop() {
-        super.stop();
-        logger.info("stop CannalInstance for {}-{} ", new Object[] { canalId, destination });
-
+        logger.info("stop CannalInstance for {}-{} ", new Object[]{canalId, destination});
         if (eventParser.isStart()) {
             beforeStopEventParser(eventParser);
             eventParser.stop();
@@ -124,6 +124,10 @@ public class AbstractCanalInstance extends AbstractCanalLifeCycle implements Can
 
         if (alarmHandler.isStart()) {
             alarmHandler.stop();
+        }
+
+        if (super.isStart()) {
+            super.stop();
         }
 
         logger.info("stop successful....");
