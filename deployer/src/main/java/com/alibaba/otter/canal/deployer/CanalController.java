@@ -234,7 +234,7 @@ public class CanalController {
         if (autoScan) {
             defaultAction = new InstanceAction() {
 
-                public void start(String destination) {
+                public synchronized void start(String destination) {
                     InstanceConfig config = instanceConfigs.get(destination);
                     if (config == null) {
                         // 重新读取一下instance config
@@ -253,7 +253,7 @@ public class CanalController {
                     logger.info("auto notify start {} successful.", destination);
                 }
 
-                public void stop(String destination) {
+                public synchronized void stop(String destination) {
                     // 此处的stop，代表强制退出，非HA机制，所以需要退出HA的monitor和配置信息
                     InstanceConfig config = instanceConfigs.remove(destination);
                     try {
@@ -273,7 +273,7 @@ public class CanalController {
                     }
                 }
 
-                public void reload(String destination) {
+                public synchronized void reload(String destination) {
                     // 目前任何配置变化，直接重启，简单处理
                     stop(destination);
                     start(destination);
@@ -282,7 +282,7 @@ public class CanalController {
                 }
 
                 @Override
-                public void release(String destination) {
+                public synchronized void release(String destination) {
                     // 此处的release，代表强制释放，主要针对HA机制释放运行，让给其他机器抢占
                     InstanceConfig config = instanceConfigs.get(destination);
                     if (config != null) {

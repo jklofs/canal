@@ -230,7 +230,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         }
     }
 
-    private boolean releaseRunning() {
+    private synchronized boolean releaseRunning() {
         if (check()) {
             release = true;
             String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
