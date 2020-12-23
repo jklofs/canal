@@ -92,9 +92,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
     }
 
     public synchronized void start() {
-        if (!super.isStart()) {
-            super.start();
-        }
+        super.start();
         try {
             processStart();
             if (zkClient != null) {
@@ -109,7 +107,8 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         } catch (Exception e) {
             logger.error("start failed", e);
             // 没有正常启动，重置一下状态，避免干扰下一次start
-            stop();
+            // 回滚步骤和停止步骤还是有差异的，回滚时，应该是按照start依次进行，而stop时，暂停状态应该是在最后处理，这样才能保证幂等
+            rollbackStart();
             //由于失败了，所以需要告知外部异常
             throw new CanalException(e);
         }
@@ -126,26 +125,41 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         }
     }
 
+    public synchronized void rollbackStart() {
+        try {
+            super.stop();
+            stopRunning();
+        }catch (Exception e){
+            logger.error("serverRunningMonitor stop error,{}",e.getMessage());
+            throw new CanalException(e);
+        }
+
+    }
+
     public synchronized void stop() {
         try {
             if (!super.isStart()){
                 return;
             }
-            if (zkClient != null) {
-                String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
-                zkClient.unsubscribeDataChanges(path, dataListener);
-
-                releaseRunning(); // 尝试一下release
-            } else {
-                processActiveExit(); // 没有zk，直接启动
-            }
-            processStop();
+            stopRunning();
             super.stop();
         }catch (Exception e){
             logger.error("serverRunningMonitor stop error,{}",e.getMessage());
             throw new CanalException(e);
         }
 
+    }
+
+    private void stopRunning() {
+        if (zkClient != null) {
+            String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
+            zkClient.unsubscribeDataChanges(path, dataListener);
+
+            releaseRunning(); // 尝试一下release
+        } else {
+            processActiveExit(); // 没有zk，直接启动
+        }
+        processStop();
     }
 
     private void initRunning() {

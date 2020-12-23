@@ -73,7 +73,7 @@ public class AbstractCanalInstance extends AbstractCanalLifeCycle implements Can
     }
 
     @Override
-    public synchronized void start() {
+    public void start() {
         if (!super.isStart()) {
             super.start();
         }
