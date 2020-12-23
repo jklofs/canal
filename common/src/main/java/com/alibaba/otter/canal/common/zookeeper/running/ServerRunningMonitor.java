@@ -162,7 +162,8 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         processStop();
     }
 
-    private void initRunning() {
+    private synchronized void initRunning() {
+        // 如果发生了stw时 有可能导致节点错误的创建running节点
         if (!isStart()) {
             return;
         }
