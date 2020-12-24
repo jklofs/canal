@@ -162,7 +162,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         processStop();
     }
 
-    private synchronized void initRunning() {
+    private void initRunning() {
         // 如果发生了stw时 有可能导致节点错误的创建running节点
         if (!isStart()) {
             return;
@@ -172,8 +172,13 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         // 序列化
         byte[] bytes = JsonUtils.marshalToByte(serverData);
         try {
-            mutex.set(false);
-            zkClient.create(path, bytes, CreateMode.EPHEMERAL);
+            synchronized (this) {
+                if (!isStart()) {
+                    return;
+                }
+                mutex.set(false);
+                zkClient.create(path, bytes, CreateMode.EPHEMERAL);
+            }
             activeData = serverData;
             processActiveEnter();// 触发一下事件
             mutex.set(true);
