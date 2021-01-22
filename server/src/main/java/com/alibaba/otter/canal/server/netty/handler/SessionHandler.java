@@ -3,6 +3,7 @@ package com.alibaba.otter.canal.server.netty.handler;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.otter.canal.server.exception.CanalServerException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -71,7 +72,7 @@ public class SessionHandler extends SimpleChannelHandler {
                         if (!embeddedServer.isStart(clientIdentity.getDestination())) {
                             ServerRunningMonitor runningMonitor = ServerRunningMonitors.getRunningMonitor(clientIdentity.getDestination());
                             if (!runningMonitor.isStart()) {
-                                runningMonitor.start();
+                                throw new CanalServerException("canal server don't start");
                             }
                         }
 

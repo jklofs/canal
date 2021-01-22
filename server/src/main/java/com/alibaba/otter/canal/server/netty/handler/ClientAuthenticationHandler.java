@@ -2,6 +2,7 @@ package com.alibaba.otter.canal.server.netty.handler;
 
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.otter.canal.server.exception.CanalServerException;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.ChannelFuture;
@@ -74,14 +75,14 @@ public class ClientAuthenticationHandler extends SimpleChannelHandler {
                         clientAuth.getFilter());
                     try {
                         MDC.put("destination", clientIdentity.getDestination());
-                        embeddedServer.subscribe(clientIdentity);
                         // 尝试启动，如果已经启动，忽略
                         if (!embeddedServer.isStart(clientIdentity.getDestination())) {
                             ServerRunningMonitor runningMonitor = ServerRunningMonitors.getRunningMonitor(clientIdentity.getDestination());
                             if (!runningMonitor.isStart()) {
-                                runningMonitor.start();
+                                throw new CanalServerException("canal server don't start");
                             }
                         }
+                        embeddedServer.subscribe(clientIdentity);
                     } finally {
                         MDC.remove("destination");
                     }
