@@ -361,7 +361,7 @@ public class SessionHandler extends SimpleChannelHandler {
         if (clientIdentitys != null && clientIdentitys.size() == 1 && clientIdentitys.contains(clientIdentity)) {
             ServerRunningMonitor runningMonitor = ServerRunningMonitors.getRunningMonitor(clientIdentity.getDestination());
             if (runningMonitor.isStart()) {
-                runningMonitor.release();
+//                runningMonitor.release();
             }
         }
     }
